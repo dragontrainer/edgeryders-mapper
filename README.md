@@ -34,7 +34,7 @@ From the command line:
 * cd into the edgeryders-mapper directory
 * run the command ```ruby -rubygems edgeryders_export.rb```
 
-While running the script will log to the screen traces and evetually errors or warnings it finds.
+While running the script will log to the screen traces and eventually errors or warnings it finds.
 
 After the script has run you'll find in the ```export``` directory a new sub-directory named YYYYMMDD-HHmm after the current date and time which will contain the two .net files extracted:
 
