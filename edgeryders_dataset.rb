@@ -173,8 +173,13 @@ class EdgerydersDataset
     
     excluded_users = ['0'] 
     excluded_users += (options[:excluded_users]||[])
-    
-    ( !rel.a.is_a?(Member) || !excluded_users.include?(rel.a.code) ) && ( !rel.b.is_a?(Member) || !excluded_users.include?(rel.b.code) )
+    allowed = true
+    allowed &&= ( !rel.a.is_a?(Member) || !excluded_users.include?(rel.a.code) )
+    allowed &&= ( !rel.b.is_a?(Member) || !excluded_users.include?(rel.b.code) )
+    if rel.respond_to?(:timestamp) && options[:until] 
+      allowed &&= ( rel.timestamp <= options[:until] )
+    end
+    allowed
   end
   
   def export_pajek( filename, options )
