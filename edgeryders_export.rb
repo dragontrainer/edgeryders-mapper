@@ -32,8 +32,8 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_pajek "export/#{ts}/edgeryders-until_now-ANON.net", :member_node_field=>:code, :exclude_isolated=>false
-dataset.export_pajek "export/#{ts}/edgeryders-until_now-NAMES.net", :member_node_field=>:name, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_now-ANON", :member_node_field=>:code, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_now-NAMES", :member_node_field=>:name, :exclude_isolated=>false
 
 puts "------------------------"
 dataset.build_member_to_member_thread_network!(:excluded_users=>EXCLUDED_USERS, :until=>two_months_ago)
@@ -47,8 +47,8 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_pajek "export/#{ts}/edgeryders-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-ANON.net", :member_node_field=>:code, :exclude_isolated=>false
-dataset.export_pajek "export/#{ts}/edgeryders-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-NAMES.net", :member_node_field=>:name, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-ANON", :member_node_field=>:code, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-NAMES", :member_node_field=>:name, :exclude_isolated=>false
 
 puts "------------------------"
 
@@ -63,8 +63,8 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_pajek "export/#{ts}/edgeryders-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-ANON.net", :member_node_field=>:code, :exclude_isolated=>false
-dataset.export_pajek "export/#{ts}/edgeryders-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-NAMES.net", :member_node_field=>:name, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-ANON", :member_node_field=>:code, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-NAMES", :member_node_field=>:name, :exclude_isolated=>false
 
 puts "------------------------"
 
@@ -79,8 +79,8 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_now-ANON.net", :member_node_field=>:code, :exclude_isolated=>true
-dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_now-NAMES.net", :member_node_field=>:name, :exclude_isolated=>true
+dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_now-ANON", :member_node_field=>:code, :exclude_isolated=>true
+dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_now-NAMES", :member_node_field=>:name, :exclude_isolated=>true
 
 puts "------------------------"
 
@@ -95,8 +95,8 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-ANON.net", :member_node_field=>:code, :exclude_isolated=>true
-dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-NAMES.net", :member_node_field=>:name, :exclude_isolated=>true
+dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-ANON", :member_node_field=>:code, :exclude_isolated=>true
+dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{two_months_ago.strftime("%Y%m%d_%H%M")}-NAMES", :member_node_field=>:name, :exclude_isolated=>true
 
 puts "------------------------"
 
@@ -111,5 +111,21 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-ANON.net", :member_node_field=>:code, :exclude_isolated=>true
-dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-NAMES.net", :member_node_field=>:name, :exclude_isolated=>true
+dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-ANON", :member_node_field=>:code, :exclude_isolated=>true
+dataset.export_pajek "export/#{ts}/edgeryders-members-to-post-until_#{four_months_ago.strftime("%Y%m%d_%H%M")}-NAMES", :member_node_field=>:name, :exclude_isolated=>true
+
+puts "------------------------"
+
+dataset.build_member_to_post_detailed_network!(:excluded_users=>EXCLUDED_USERS)
+
+puts ""
+puts "Member to post detailed network"
+puts "Members count: #{dataset.detailed_network.members.size}"
+puts "Posts count: #{dataset.detailed_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
+puts "Edges count: #{dataset.detailed_network.relationships.size}"
+puts ""
+puts "Exporting ..."
+
+FileUtils.mkdir_p "export/#{ts}"
+dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-ANON", :member_node_field=>:code
+dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-NAMES", :member_node_field=>:name

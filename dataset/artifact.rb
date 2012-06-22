@@ -6,7 +6,7 @@ require 'time'
 # through the connection to other artifcats
 # the author and other artifacts authors collaborate
 class Artifact < Element
-  attr_accessor :code, :author, :children, :timestamp
+  attr_accessor :code, :author, :children, :timestamp, :additional_data
   
   def initialize(code, author, raw_data)
     @code = code
@@ -18,6 +18,8 @@ class Artifact < Element
 
     dt = @data["date"]
     @timestamp ||= Time.parse( dt ) rescue nil
+    
+    @additional_data = {}
   end
   
   def pretty(depth=0)
@@ -28,7 +30,7 @@ class Artifact < Element
   end
   
   def name
-    code
+    @data["title"]||code
   end
   
   def dump_data

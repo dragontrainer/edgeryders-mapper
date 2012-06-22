@@ -18,4 +18,5 @@ class Member < Element
   def to_s
     "#{@code}"
   end
+   
 end

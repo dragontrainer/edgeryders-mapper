@@ -10,10 +10,11 @@ require 'dataset/timestamped_relationship'
 require 'dataset/weighted_relationship'
 require 'dataset/weighted_network'
 require 'dataset/node_type'
+require 'dataset/detailed_network'
 
 class EdgerydersDataset
   
-  attr_accessor :site, :timed_relationships, :artifacts_map, :weighted_network
+  attr_accessor :site, :timed_relationships, :artifacts_map, :weighted_network, :detailed_network
   
   def initialize args
     @site = Site.new
@@ -37,7 +38,24 @@ class EdgerydersDataset
         @other_nodes_map[n["node"]["nid"]] = n["node"]
       end
     end
-     
+    
+    # add qualifying attributes from the nodes structure to be exported
+    # for the mission reports they are the mission brief and the campaign
+    # and for both the id and the description
+    @artifacts_map.values.each do |artifact|
+      # add the parent: mission brief
+      if mission_brief = @other_nodes_map[artifact.gid] 
+        artifact.additional_data[:mission_brief_id] = mission_brief["nid"]
+        artifact.additional_data[:mission_brief_title] = mission_brief["title"]
+        
+        if campaign = @other_nodes_map[mission_brief["parent-gid"]]
+          artifact.additional_data[:campaign_id] = campaign["nid"]
+          artifact.additional_data[:campaign_title] = campaign["title"]          
+        end 
+      end
+      
+    end
+    
     jcomments = JSON.parse args[:json_comments]
     jcomments["comments"].each do |c|
       comment = Artifact.new( "comment.#{c["comment"]["cid"]}", @site.members[c["comment"]["uid"]], c["comment"] )
@@ -180,6 +198,20 @@ class EdgerydersDataset
                                   reject{|c| c.respond_to?(:timestamp) && options[:until] && c.timestamp > options[:until] }
   end
 
+  def build_member_to_post_detailed_network!(options={})
+    puts "\nBuilding the member to post network without meginge the arcs\n"
+    build_member_post_relationships!
+    @detailed_network = DetailedNetwork.new
+    @member_post_relationships.each do |rel|
+      @detailed_network.relationships << rel if allowed_relationship?( rel, options )
+    end
+
+    @detailed_network.members = @site.
+                                  members.
+                                  values.
+                                  reject{|c| c.respond_to?(:timestamp) && options[:until] && c.timestamp > options[:until] }
+  end
+
   def allowed_relationship?( rel, options={} )
     
     excluded_users = ['0'] 
@@ -194,7 +226,7 @@ class EdgerydersDataset
   end
   
   def export_pajek( filename, options )
-    write_file filename, convert_to_pajek(@weighted_network, options)
+    write_file "#{filename}.net", convert_to_pajek(@weighted_network, options)
 
     puts
     puts "EXPORT PAJEK WITH OPTIONS #{options.inspect} DONE"
@@ -227,6 +259,41 @@ class EdgerydersDataset
     end
 
     return pajek
+  end
+
+  def export_csv( filename, options )
+    nodes,edges = convert_to_csv(@detailed_network, options)
+    
+    write_file "#{filename}-nodes.csv", %{"Node Id","Node Description","Type","Timestamp","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+nodes.join("\n")
+    write_file "#{filename}-edges.csv", %{"Source Id","Destination Id","Timestamp"\n}+edges.join("\n")
+    puts
+    puts "EXPORT CSV WITH OPTIONS #{options.inspect} DONE"
+    puts
+  end
+  
+
+  def convert_to_csv( detailed_network, options={} )
+    member_node_field = options[:member_node_field]||:code
+
+    nodes = Array.new
+    
+    contributors = detailed_network.relationships.map{|r| [r.a, r.b] }.flatten.uniq{|s| s.send(member_node_field)}  
+    contributors.each do |c|
+      n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}",#{c.timestamp.to_i}}
+      if c.is_a?(Artifact)
+        n << %{,"#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}"}
+      else
+        n << %{,,,,}
+      end
+      nodes << n
+    end
+
+    edges = Array.new
+    detailed_network.relationships.each do |r|
+      edges << %{"#{r.a.code}","#{r.b.code}",#{r.timestamp.to_i}}
+    end
+
+    return nodes,edges
   end
 
   def write_file filename, content
