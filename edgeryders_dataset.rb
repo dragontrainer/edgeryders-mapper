@@ -9,6 +9,7 @@ require 'dataset/relationship'
 require 'dataset/timestamped_relationship'
 require 'dataset/weighted_relationship'
 require 'dataset/weighted_network'
+require 'dataset/node_type'
 
 class EdgerydersDataset
   
@@ -28,14 +29,14 @@ class EdgerydersDataset
     
     jnodes = JSON.parse args[:json_nodes]
     jnodes["nodes"].each do |n|
-      if n["node"]["type"] == 'mission_case'
-        artifact = Artifact.new( "mission_case.#{n["node"]["nid"]}", @site.members[n["node"]["uid"]], n["node"] )
+      if NodeType.mission_report?(n["node"])
+        artifact = Artifact.new( "mission_report.#{n["node"]["nid"]}", @site.members[n["node"]["uid"]], n["node"] )
         @site.artifacts << artifact
         @artifacts_map[artifact.code] = artifact
       else
         @other_nodes_map[n["node"]["nid"]] = n["node"]
       end
-     end
+    end
      
     jcomments = JSON.parse args[:json_comments]
     jcomments["comments"].each do |c|
@@ -46,7 +47,7 @@ class EdgerydersDataset
     # processing threaded comments and building the artifacts tree
     # we do this in a second step to prevent problems from the json file
     # possibly not being ordered
-    @errors = {:without_pid=>[], :parent_not_a_mission_case=>[], :without_nid=>[]}
+    @errors = {:without_pid=>[], :parent_not_a_mission_report=>[], :without_nid=>[]}
     @artifacts_map.each do |code, artifact|
       if artifact.pid
          # this is a threaded comment
@@ -54,10 +55,10 @@ class EdgerydersDataset
          @errors[:without_pid] << artifact unless parent
       elsif artifact.cid
          # this is an comment on a mission case
-         parent = @artifacts_map["mission_case.#{artifact.nid}"]
+         parent = @artifacts_map["mission_report.#{artifact.nid}"]
          unless parent
            if other_node = @other_nodes_map[artifact.nid]
-             @errors[:parent_not_a_mission_case] << [artifact, other_node]
+             @errors[:parent_not_a_mission_report] << [artifact, other_node]
            else
              @errors[:without_nid] << artifact
            end
@@ -74,8 +75,8 @@ class EdgerydersDataset
     end
     puts "======\n"
     
-    puts "The following comments had a nid defined that was not a mission_case (the node found is shown in ()):\n"
-    @errors[:parent_not_a_mission_case].each do |artifact, other_node|
+    puts "The following comments had a nid defined that was not a mission_report (the node found is shown in ()):\n"
+    @errors[:parent_not_a_mission_report].each do |artifact, other_node|
       puts "    #{artifact.dump_data} (#{other_node.inspect})"
     end      
     puts "======\n"
@@ -129,6 +130,11 @@ class EdgerydersDataset
     @timed_relationships.each do |rel|
       @weighted_network << rel if allowed_relationship?( rel, options )
     end
+
+    @weighted_network.members = @site.
+                                  members.
+                                  values.
+                                  reject{|c| c.respond_to?(:timestamp) && options[:until] && c.timestamp > options[:until] }
   end
 
   # builds the list of timed relationships formed
@@ -167,6 +173,11 @@ class EdgerydersDataset
     @member_post_relationships.each do |rel|
       @weighted_network << rel if allowed_relationship?( rel, options )
     end
+
+    @weighted_network.members = @site.
+                                  members.
+                                  values.
+                                  reject{|c| c.respond_to?(:timestamp) && options[:until] && c.timestamp > options[:until] }
   end
 
   def allowed_relationship?( rel, options={} )
@@ -183,7 +194,7 @@ class EdgerydersDataset
   end
   
   def export_pajek( filename, options )
-    write_file filename, convert_to_pajek(@weighted_network.relationships, options)
+    write_file filename, convert_to_pajek(@weighted_network, options)
 
     puts
     puts "EXPORT PAJEK WITH OPTIONS #{options.inspect} DONE"
@@ -191,14 +202,14 @@ class EdgerydersDataset
   end
   
 
-  def convert_to_pajek( relationships, options={} )
+  def convert_to_pajek( weighted_network, options={} )
     member_node_field = options[:member_node_field]||:code
     exclude_isolated = options[:exclude_isolated]||false
     
     if exclude_isolated
-      contributors = relationships.map{|r| [r.a.send(member_node_field), r.b.send(member_node_field)]}.flatten.uniq 
+      contributors = weighted_network.relationships.map{|r| [r.a.send(member_node_field), r.b.send(member_node_field)]}.flatten.uniq 
     else
-      contributors = @site.members.values.map{|m| m.send(member_node_field) }
+      contributors = weighted_network.members.map{|m| m.send(member_node_field) }
     end
 
     pajek = "*Vertices #{contributors.size}" +"\r\n"
@@ -209,7 +220,7 @@ class EdgerydersDataset
 
     pajek << "*Edges"+"\r\n"
 
-    relationships.each do |r| 
+    weighted_network.relationships.each do |r| 
       a = contributors.index(r.a.send(member_node_field))+1
       b = contributors.index(r.b.send(member_node_field))+1
       pajek << %{#{a} #{b} #{r.weight}}+"\r\n"

@@ -1,6 +1,8 @@
 require 'dataset/weighted_relationship'
 
 class WeightedNetwork
+  attr_accessor :members
+  
   
   def initialize
     @relations_map = Hash.new

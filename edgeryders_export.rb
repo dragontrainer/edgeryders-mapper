@@ -1,3 +1,4 @@
+$LOAD_PATH.unshift(File.dirname(__FILE__))
 require 'edgeryders_dataset'
 require 'fileutils'
 require 'date'
@@ -24,7 +25,7 @@ dataset.build_member_to_member_thread_network!(:excluded_users=>EXCLUDED_USERS)
 
 puts ""
 puts "Member to member network up to now"
-puts "Members count: #{dataset.site.members.size}"
+puts "Members count: #{dataset.weighted_network.members.size}"
 puts "Connected members count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
 puts "Edges count: #{dataset.weighted_network.relationships.size}"
 puts ""
@@ -39,7 +40,7 @@ dataset.build_member_to_member_thread_network!(:excluded_users=>EXCLUDED_USERS, 
 
 puts ""
 puts "Member to member network up to #{two_months_ago}"
-puts "Members count: #{dataset.site.members.size}"
+puts "Members count: #{dataset.weighted_network.members.size}"
 puts "Connected members count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
 puts "Edges count: #{dataset.weighted_network.relationships.size}"
 puts ""
@@ -55,7 +56,7 @@ dataset.build_member_to_member_thread_network!(:excluded_users=>EXCLUDED_USERS, 
 
 puts ""
 puts "Member to member network up to #{four_months_ago}"
-puts "Members count: #{dataset.site.members.size}"
+puts "Members count: #{dataset.weighted_network.members.size}"
 puts "Connected members count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
 puts "Edges count: #{dataset.weighted_network.relationships.size}"
 puts ""
@@ -71,8 +72,8 @@ dataset.build_member_to_post_network!(:excluded_users=>EXCLUDED_USERS)
 
 puts ""
 puts "Member to post network up to now"
-puts "Members count: #{dataset.site.members.size}"
-puts "Posts count: #{dataset.site.artifacts.size}"
+puts "Members count: #{dataset.weighted_network.members.size}"
+puts "Posts count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
 puts "Edges count: #{dataset.weighted_network.relationships.size}"
 puts ""
 puts "Exporting ..."
@@ -87,8 +88,8 @@ dataset.build_member_to_post_network!(:excluded_users=>EXCLUDED_USERS, :until=>t
 
 puts ""
 puts "Member to post network up to #{two_months_ago}"
-puts "Members count: #{dataset.site.members.size}"
-puts "Posts count: #{dataset.site.artifacts.size}"
+puts "Members count: #{dataset.weighted_network.members.size}"
+puts "Posts count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
 puts "Edges count: #{dataset.weighted_network.relationships.size}"
 puts ""
 puts "Exporting ..."
@@ -103,8 +104,8 @@ dataset.build_member_to_post_network!(:excluded_users=>EXCLUDED_USERS, :until=>f
 
 puts ""
 puts "Member to post network up to #{four_months_ago}"
-puts "Members count: #{dataset.site.members.size}"
-puts "Posts count: #{dataset.site.artifacts.size}"
+puts "Members count: #{dataset.weighted_network.members.size}"
+puts "Posts count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
 puts "Edges count: #{dataset.weighted_network.relationships.size}"
 puts ""
 puts "Exporting ..."

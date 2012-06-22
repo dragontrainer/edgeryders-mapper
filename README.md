@@ -32,7 +32,7 @@ The files should be named as follows:
 From the command line:
 
 * cd into the edgeryders-mapper directory
-* run the command ```ruby -rubygems edgeryders_export.rb```
+* run the command ```ruby -rubygems -I. edgeryders_export.rb```
 
 While running the script will log to the screen traces and eventually errors or warnings it finds.
 
