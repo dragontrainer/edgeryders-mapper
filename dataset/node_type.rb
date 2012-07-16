@@ -13,7 +13,7 @@ module NodeType
      end
 
      def method_missing name, *args
-       if /^(#{MAPPING.keys.join("|")})\?$/ =~ name
+       if /^(#{MAPPING.keys.join("|")})\?$/ =~ name.to_s
          is?($1.to_sym, *args)
        end
      end
