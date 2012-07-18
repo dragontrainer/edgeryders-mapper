@@ -264,8 +264,8 @@ class EdgerydersDataset
   def export_csv( filename, options )
     nodes,edges = convert_to_csv(@detailed_network, options)
     
-    write_file "#{filename}-nodes.csv", %{"Node Id","Node Description","Type","Timestamp","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+nodes.join("\n")
-    write_file "#{filename}-edges.csv", %{"Source Id","Destination Id","Timestamp"\n}+edges.join("\n")
+    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","TimeInterval","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+nodes.join("\n")
+    write_file "#{filename}-edges.csv", %{"Source","Target","TimeInterval"\n}+edges.join("\n")
     puts
     puts "EXPORT CSV WITH OPTIONS #{options.inspect} DONE"
     puts
@@ -279,11 +279,11 @@ class EdgerydersDataset
     
     contributors = detailed_network.relationships.map{|r| [r.a, r.b] }.flatten.uniq{|s| s.send(member_node_field)}  
     contributors.each do |c|
-      n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}",#{c.timestamp.to_i}}
+      n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}"}
       if c.is_a?(Artifact)
-        n << %{,"#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}"}
+        n << %{,"<[#{c.timestamp.strftime("%Y-%m-%dT%H:%M:%S:000")}, Infinity]>","#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}"}
       else
-        n << %{,,,,}
+        n << %{,"<[#{c.timestamp.strftime("%Y-%m-%dT%H:%M:%S:000")}, Infinity]>",,,,}
       end
       nodes << n
     end

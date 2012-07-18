@@ -7,6 +7,9 @@ ts = Time.new.strftime("%Y%m%d-%H%M")
 EXCLUDED_USERS = ['229', '624', '353', '595', '426', '462', '185', '592'] # these are spambots or other blocked users                               
 
 today = Date.today
+# see documentation of time objects for exact timing
+one_month_ago_day = today - 30
+one_month_ago = Time.mktime(one_month_ago_day.year, one_month_ago_day.month, one_month_ago_day.day)
 two_months_ago_day = today - 60 
 two_months_ago = Time.mktime(two_months_ago_day.year, two_months_ago_day.month, two_months_ago_day.day)
 four_months_ago_day = today - 120 
@@ -34,6 +37,21 @@ puts "Exporting ..."
 FileUtils.mkdir_p "export/#{ts}"
 dataset.export_pajek "export/#{ts}/edgeryders-until_now-ANON", :member_node_field=>:code, :exclude_isolated=>false
 dataset.export_pajek "export/#{ts}/edgeryders-until_now-NAMES", :member_node_field=>:name, :exclude_isolated=>false
+
+puts "------------------------"
+dataset.build_member_to_member_thread_network!(:excluded_users=>EXCLUDED_USERS, :until=>one_month_ago)
+
+puts ""
+puts "Member to member network up to #{one_month_ago}"
+puts "Members count: #{dataset.weighted_network.members.size}"
+puts "Connected members count: #{dataset.weighted_network.relationships.map{|r| [r.a, r.b]}.flatten.uniq.size}"
+puts "Edges count: #{dataset.weighted_network.relationships.size}"
+puts ""
+puts "Exporting ..."
+
+FileUtils.mkdir_p "export/#{ts}"
+dataset.export_pajek "export/#{ts}/edgeryders-until_#{one_month_ago.strftime("%Y%m%d_%H%M")}-ANON", :member_node_field=>:code, :exclude_isolated=>false
+dataset.export_pajek "export/#{ts}/edgeryders-until_#{one_month_ago.strftime("%Y%m%d_%H%M")}-NAMES", :member_node_field=>:name, :exclude_isolated=>false
 
 puts "------------------------"
 dataset.build_member_to_member_thread_network!(:excluded_users=>EXCLUDED_USERS, :until=>two_months_ago)
