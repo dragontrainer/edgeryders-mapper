@@ -1,3 +1,7 @@
+# This file exports only .net  files. There are 9 time slices, 30 days apart from each other, counting backwards from the date the file is run. 
+#To change the number of slices change the integer at the beginning of line 24; to change the interval between slices change the integer at the
+# end of line 45
+
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 require 'edgeryders_dataset'
 require 'fileutils'
