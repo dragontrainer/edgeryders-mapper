@@ -18,7 +18,7 @@ dataset = EdgerydersDataset.new :json_users => File.read('json/users.json'),
                                  
 puts "------------------------"
 
-8.times do
+9.times do
 
 extractiontime = Time.mktime(extractionday.year, extractionday.month, extractionday.day)
 
