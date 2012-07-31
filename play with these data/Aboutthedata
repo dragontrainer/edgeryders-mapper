@@ -1,0 +1,6 @@
+// The files in this folder have been extracted by the database of the online platform Edgeryders (http://edgeryders.ppa.coe.int)
+// Nodes in the network represent users; edges represent comments. An edge from Alice to Bob is created if Alice comments a post by Bob or if Alice comments a comment by Bob. Edges are directed.
+// The extraction was performed on July 19th 2012. The files in the folder represent "snapshots" of the Edgeryders network at different points in time, at 30 days distance from each other. The metadata are in the filename: edgeryders-until_20111222_0000-ANON.net is a snaposhot of the Egderyders network from inception (15th November 2011) to 2011-11-22 at 00:00, anonymized. 
+// The file is readable by main network analysis software packages: Pajek, Gephi end Tulip. 
+// The extraction was made using the code in http://https://github.com/dragontrainer/edgeryders-mapper by Luca Mearelli as part of the Dragon Trainer project. You are very welcome to collaborate to the project: for an introduction, see http://www.cottica.net/?p=4711
+// These data are licensed under a Creative Commons-Attribution License. If you process them I, Alberto Cottica, will be personally grateful if you let me know what you make of them. My email address is alberto [at] cottica [dot] net.
