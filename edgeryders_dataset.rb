@@ -199,7 +199,7 @@ class EdgerydersDataset
   end
 
   def build_member_to_post_detailed_network!(options={})
-    puts "\nBuilding the member to post network without meginge the arcs\n"
+    puts "\nBuilding the member to post network without merging the arcs\n"
     build_member_post_relationships!
     @detailed_network = DetailedNetwork.new
     @member_post_relationships.each do |rel|
@@ -264,7 +264,7 @@ class EdgerydersDataset
   def export_csv( filename, options )
     nodes,edges = convert_to_csv(@detailed_network, options)
     
-    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","TimeInterval","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+nodes.join("\n")
+    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","TimeInterval","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title","Roles"\n}+nodes.join("\n")
     write_file "#{filename}-edges.csv", %{"Source","Target","TimeInterval"\n}+edges.join("\n")
     puts
     puts "EXPORT CSV WITH OPTIONS #{options.inspect} DONE"
@@ -274,16 +274,17 @@ class EdgerydersDataset
 
   def convert_to_csv( detailed_network, options={} )
     member_node_field = options[:member_node_field]||:code
-
+    timestamp_method = options[:timestamp_method]||:gephi_time_interval
+    
     nodes = Array.new
     
     contributors = detailed_network.relationships.map{|r| [r.a, r.b] }.flatten.uniq{|s| s.send(member_node_field)}  
     contributors.each do |c|
-      n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}"}
+      n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}",#{self.send(timestamp_method, c.timestamp)}}
       if c.is_a?(Artifact)
-        n << %{,"<[#{c.timestamp.strftime("%Y-%m-%dT%H:%M:%S:000")}, Infinity]>","#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}"}
-      else
-        n << %{,"<[#{c.timestamp.strftime("%Y-%m-%dT%H:%M:%S:000")}, Infinity]>",,,,}
+        n << %{,"#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}",}
+      else # these are members
+        n << %{,,,,"#{c.roles}"}
       end
       nodes << n
     end
@@ -299,5 +300,13 @@ class EdgerydersDataset
   def write_file filename, content
     File.open(filename, 'w') {|f| f.write content }
   end
-
+  
+  def gephi_time_interval(from, to=nil)
+    f = from.strftime("%Y-%m-%dT%H:%M:%S:000")
+    t = to.nil? ? "Infinity" : to.strftime("%Y-%m-%dT%H:%M:%S:000")
+    %{"<[#{f}, #{t}]>"}
+  end
+  def epoch_timestamp(from, to=nil)
+    "#{from.to_i}"
+  end
 end

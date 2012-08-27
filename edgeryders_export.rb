@@ -147,3 +147,6 @@ puts "Exporting ..."
 FileUtils.mkdir_p "export/#{ts}"
 dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-ANON", :member_node_field=>:code
 dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-NAMES", :member_node_field=>:name
+
+dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-withepochtimestamp-ANON", :member_node_field=>:code, :timestamp_method=>:epoch_timestamp
+dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-withepochtimestamp-NAMES", :member_node_field=>:name, :timestamp_method=>:epoch_timestamp
