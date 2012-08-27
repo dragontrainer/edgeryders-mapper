@@ -1,3 +1,5 @@
 .rvmrc
 *.log
 log.txt
+export
+.DS_Store
