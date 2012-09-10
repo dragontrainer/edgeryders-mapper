@@ -7,5 +7,9 @@ class DetailedNetwork
     @relationships = Array.new
     @members = Array.new
   end
+
+  def <<(relationship)
+    @relationships << relationship
+  end
   
 end

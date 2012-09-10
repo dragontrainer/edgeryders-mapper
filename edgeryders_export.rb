@@ -145,8 +145,23 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-ANON", :member_node_field=>:code
-dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-NAMES", :member_node_field=>:name
+dataset.export_member_artifact_csv "export/#{ts}/edgeryders-members-to-post-detailed-ANON", :member_node_field=>:code
+dataset.export_member_artifact_csv "export/#{ts}/edgeryders-members-to-post-detailed-NAMES", :member_node_field=>:name
 
-dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-withepochtimestamp-ANON", :member_node_field=>:code, :timestamp_method=>:epoch_timestamp
-dataset.export_csv "export/#{ts}/edgeryders-members-to-post-detailed-withepochtimestamp-NAMES", :member_node_field=>:name, :timestamp_method=>:epoch_timestamp
+dataset.export_member_artifact_csv "export/#{ts}/edgeryders-members-to-post-detailed-withepochtimestamp-ANON", :member_node_field=>:code, :timestamp_method=>:epoch_timestamp
+dataset.export_member_artifact_csv "export/#{ts}/edgeryders-members-to-post-detailed-withepochtimestamp-NAMES", :member_node_field=>:name, :timestamp_method=>:epoch_timestamp
+
+puts "------------------------"
+
+dataset.build_member_to_member_thread_network_detailed!(:excluded_users=>EXCLUDED_USERS)
+
+puts ""
+puts "Member to mamber detailed network"
+puts "Members count: #{dataset.detailed_network.members.size}"
+puts "Edges count: #{dataset.detailed_network.relationships.size}"
+puts ""
+puts "Exporting ..."
+
+FileUtils.mkdir_p "export/#{ts}"
+dataset.export_member_member_csv "export/#{ts}/edgeryders-members-to-member-detailed-withepochtimestamp-ANON", :member_node_field=>:code, :timestamp_method=>:epoch_timestamp
+dataset.export_member_member_csv "export/#{ts}/edgeryders-members-to-member-detailed-withepochtimestamp-NAMES", :member_node_field=>:name, :timestamp_method=>:epoch_timestamp

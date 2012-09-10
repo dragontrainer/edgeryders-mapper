@@ -1,9 +1,10 @@
 class Relationship
-  attr_accessor :a, :b
+  attr_accessor :a, :b, :additional_data
   
-  def initialize( from, to )
+  def initialize( from, to, data=nil )
     @a = from
     @b = to
+    @additional_data = data
   end
   
   def signature

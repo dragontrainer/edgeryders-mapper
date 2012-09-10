@@ -113,14 +113,17 @@ class EdgerydersDataset
   def build_timed_relationships!
     @timed_relationships = Array.new
     @site.artifacts.each do |artifact|
-      @timed_relationships += build_timed_relationships_for(artifact)
+      additional_data = artifact.additional_data
+      # adding the mission report id and title
+      additional_data.merge!(:mission_report_id=>$1, :mission_report_title=>artifact.title) if artifact.code =~ /mission_report\.(\d+)/
+      @timed_relationships += build_timed_relationships_for(artifact, additional_data)
     end
   end
   
   # recursively builds the relationships to the 
   # artifact author from the artifact children authors
   # recurses on the children
-  def build_timed_relationships_for(artifact)
+  def build_timed_relationships_for(artifact, additional_data)
     rels = Array.new
     
     if artifact.author.nil?
@@ -133,9 +136,8 @@ class EdgerydersDataset
         puts "Error reading artifact #{child.code} (child of: #{artifact.code}) author not defined [[ #{ child.dump_data } ]]"
       else
         puts "Warning reading artifact #{child.code}: same author of the parent #{artifact.code} [[ #{ artifact.author.code } ]]" if child.author.to_s == artifact.author.to_s
-        
-        rels << TimestampedRelationship.new(child.author, artifact.author, child.timestamp)
-        rels += build_timed_relationships_for(child)
+        rels << TimestampedRelationship.new(child.author, artifact.author, child.timestamp, additional_data)
+        rels += build_timed_relationships_for(child, additional_data)
       end
     end
     rels 
@@ -150,6 +152,20 @@ class EdgerydersDataset
     end
 
     @weighted_network.members = @site.
+                                  members.
+                                  values.
+                                  reject{|c| c.respond_to?(:timestamp) && options[:until] && c.timestamp > options[:until] }
+  end
+
+  def build_member_to_member_thread_network_detailed!(options={})
+    puts "\nBuilding the member to member detailed network based on threaded comments (multi edge)\n"
+    build_timed_relationships!
+    @detailed_network = DetailedNetwork.new
+    @timed_relationships.each do |rel|
+      @detailed_network << rel if allowed_relationship?( rel, options )
+    end
+
+    @detailed_network.members = @site.
                                   members.
                                   values.
                                   reject{|c| c.respond_to?(:timestamp) && options[:until] && c.timestamp > options[:until] }
@@ -261,18 +277,18 @@ class EdgerydersDataset
     return pajek
   end
 
-  def export_csv( filename, options )
-    nodes,edges = convert_to_csv(@detailed_network, options)
+  def export_member_artifact_csv( filename, options )
+    nodes,edges = convert_to_member_artifact_csv(@detailed_network, options)
     
     write_file "#{filename}-nodes.csv", %{"Id","Label","Type","TimeInterval","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title","Roles"\n}+nodes.join("\n")
     write_file "#{filename}-edges.csv", %{"Source","Target","TimeInterval"\n}+edges.join("\n")
     puts
-    puts "EXPORT CSV WITH OPTIONS #{options.inspect} DONE"
+    puts "EXPORT MEMBER TO ARTIFACT CSV WITH OPTIONS #{options.inspect} DONE"
     puts
   end
   
 
-  def convert_to_csv( detailed_network, options={} )
+  def convert_to_member_artifact_csv( detailed_network, options={} )
     member_node_field = options[:member_node_field]||:code
     timestamp_method = options[:timestamp_method]||:gephi_time_interval
     
@@ -281,17 +297,60 @@ class EdgerydersDataset
     contributors = detailed_network.relationships.map{|r| [r.a, r.b] }.flatten.uniq{|s| s.send(member_node_field)}  
     contributors.each do |c|
       n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}",#{self.send(timestamp_method, c.timestamp)}}
-      if c.is_a?(Artifact)
-        n << %{,"#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}",}
-      else # these are members
-        n << %{,,,,"#{c.roles}"}
+      if c.respond_to?(:additional_data)
+        n << %{,"#{c.additional_data[:mission_brief_id]}","#{c.additional_data[:mission_brief_title]}","#{c.additional_data[:campaign_id]}","#{c.additional_data[:campaign_title]}"}
+      else
+        n << %{,,,,}
+      end
+      if c.respond_to?(:roles) 
+        n << %{,"#{c.roles}"}
+      else
+        n << %{,}
       end
       nodes << n
     end
 
     edges = Array.new
     detailed_network.relationships.each do |r|
-      edges << %{"#{r.a.code}","#{r.b.code}",#{r.timestamp.to_i}}
+      edges << %{"#{r.a.code}","#{r.b.code}",#{self.send(timestamp_method, r.timestamp)}}
+    end
+
+    return nodes,edges
+  end
+
+  def export_member_member_csv( filename, options )
+    nodes,edges = convert_to_member_member_csv(@detailed_network, options)
+    
+    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","Timestamp","Roles"\n}+nodes.join("\n")
+    write_file "#{filename}-edges.csv", %{"Source","Target","Timestamp","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+edges.join("\n")
+    puts
+    puts "EXPORT MEMBER TO MEMBER CSV WITH OPTIONS #{options.inspect} DONE"
+    puts
+  end
+  
+
+  def convert_to_member_member_csv( detailed_network, options={} )
+    member_node_field = options[:member_node_field]||:code
+    timestamp_method = options[:timestamp_method]||:gephi_time_interval
+    
+    nodes = Array.new
+    
+    contributors = detailed_network.relationships.map{|r| [r.a, r.b] }.flatten.uniq{|s| s.send(member_node_field)}  
+    contributors.each do |c|
+      n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}",#{self.send(timestamp_method, c.timestamp)},"#{c.roles rescue ''}"}
+      nodes << n
+    end
+
+    edges = Array.new
+    detailed_network.relationships.each do |r|
+      e = %{"#{r.a.code}","#{r.b.code}",#{self.send(timestamp_method, r.timestamp)}}
+      e << %{,"#{r.additional_data[:mission_report_id] rescue ''}"}
+      e << %{,"#{r.additional_data[:mission_report_title] rescue ''}"}
+      e << %{,"#{r.additional_data[:mission_brief_id] rescue ''}"}
+      e << %{,"#{r.additional_data[:mission_brief_title] rescue ''}"}
+      e << %{,"#{r.additional_data[:campaign_id] rescue ''}"}
+      e << %{,"#{r.additional_data[:campaign_title] rescue ''}"}
+      edges << e
     end
 
     return nodes,edges
