@@ -321,8 +321,8 @@ class EdgerydersDataset
   def export_member_member_csv( filename, options )
     nodes,edges = convert_to_member_member_csv(@detailed_network, options)
     
-    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","Timestamp","Roles"\n}+nodes.join("\n")
-    write_file "#{filename}-edges.csv", %{"Source","Target","Timestamp","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+edges.join("\n")
+    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","TimeInterval","Roles"\n}+nodes.join("\n")
+    write_file "#{filename}-edges.csv", %{"Source","Target","TimeInterval","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+edges.join("\n")
     puts
     puts "EXPORT MEMBER TO MEMBER CSV WITH OPTIONS #{options.inspect} DONE"
     puts
