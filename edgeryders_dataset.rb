@@ -340,24 +340,83 @@ class EdgerydersDataset
       n = %{"#{c.code}","#{c.send(member_node_field)}","#{c.class.name}",#{self.send(timestamp_method, c.timestamp)},"#{c.roles rescue ''}"}
       nodes << n
     end
-
-    edges = Array.new
-    detailed_network.relationships.each do |r|
-      e = %{"#{r.a.code}","#{r.b.code}",#{self.send(timestamp_method, r.timestamp)}}
-      e << %{,"#{r.additional_data[:mission_report_id] rescue ''}"}
-      e << %{,"#{r.additional_data[:mission_report_title] rescue ''}"}
-      e << %{,"#{r.additional_data[:mission_brief_id] rescue ''}"}
-      e << %{,"#{r.additional_data[:mission_brief_title] rescue ''}"}
-      e << %{,"#{r.additional_data[:campaign_id] rescue ''}"}
-      e << %{,"#{r.additional_data[:campaign_title] rescue ''}"}
-      edges << e
-    end
-
+    
+    edges = options[:decay].nil? ? plain_edges_csv(detailed_network, options) : decay_edges_csv(detailed_network, options)
+    
     return nodes,edges
   end
+  
+  def plain_edges_csv(detailed_network, options)
+    timestamp_method = options[:timestamp_method]||:gephi_time_interval
+    Array.new.tap do |edges|
+      detailed_network.relationships.each do |r|
+        e = %{"#{r.a.code}","#{r.b.code}",#{self.send(timestamp_method, r.timestamp)}}
+        e << %{,"#{r.additional_data[:mission_report_id] rescue ''}"}
+        e << %{,"#{r.additional_data[:mission_report_title] rescue ''}"}
+        e << %{,"#{r.additional_data[:mission_brief_id] rescue ''}"}
+        e << %{,"#{r.additional_data[:mission_brief_title] rescue ''}"}
+        e << %{,"#{r.additional_data[:campaign_id] rescue ''}"}
+        e << %{,"#{r.additional_data[:campaign_title] rescue ''}"}
+        edges << e
+      end      
+    end
+  end
 
+  def decay_edges_csv(detailed_network, options)
+    timestamp_method = options[:timestamp_method]||:gephi_time_interval_list
+    decay_seconds = options[:decay].to_i*24*60*60
+    Array.new.tap do |edges|
+      # group the relationships by their ends
+      grouped_relationships = Hash.new
+      detailed_network.relationships.each do |r| 
+        grouped_relationships[r.ends] ||= Array.new
+        grouped_relationships[r.ends] << r 
+      end
+      # for each group:
+      grouped_relationships.each do |ends, rels|
+        timestamps = Array.new 
+        rels.each do |r|
+          #  - collect all relationship timestamps, mapping each do [timestamp, 1]
+          timestamps << [r.timestamp, 1]
+          #  - for each timestamp add the decay moment: [timestamp+decay, -1]
+          decay_ts = Time.at(r.timestamp.to_i + decay_seconds)
+          timestamps << [decay_ts, -1]
+        end
+        #  - sort all the timestamps
+        timestamps = timestamps.sort_by{|e| e[0]}
+        
+        #  - cycle on the timestamps collecting the intervals
+        intervals = []        
+        weight = 0
+        previous_ts = nil
+        timestamps.each do |ts, i|
+          intervals << [previous_ts, ts, weight] if weight>0 && !previous_ts.nil?
+          weight += i
+          previous_ts =ts
+        end
+        # treat the special case of open ended (should not happen with decayed edges)
+        intervals << [previous_ts, nil, weight] if weight>0 && !previous_ts.nil?
+        
+        #  - output the intervals 
+        edges << %{"#{ends[0].code}","#{ends[1].code}",#{self.send(timestamp_method, intervals)},,,,,,}
+      end
+    end
+  end
+  
   def write_file filename, content
     File.open(filename, 'w') {|f| f.write content }
+  end
+  
+  def gephi_time_interval_list(intervals)
+    fmt = "%Y-%m-%dT%H:%M:%S:000" 
+    interval_list = intervals.map do |interval| 
+      f = interval[0].strftime(fmt)
+      t = interval[1].nil? ? "Infinity" : interval[1].strftime("%Y-%m-%dT%H:%M:%S:000")
+      w = interval[2]
+      %{"[#{f}, #{t}, #{w}]"}
+    end
+       
+    %{"<#{interval_list.join("; ")}>"}
   end
   
   def gephi_time_interval(from, to=nil)

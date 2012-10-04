@@ -10,6 +10,10 @@ class Relationship
   def signature
     %{#{a.to_s}_#{b.to_s}}
   end
+
+  def ends
+    [a,b]
+  end
   
   def to_s
     %{#{a.to_s} --> #{b.to_s}}
