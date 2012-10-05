@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gexf xmlns="http://www.gexf.net/1.2draft" version="1.2" xmlns:viz="http://www.gexf.net/1.2draft/viz" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd">
+  <meta lastmodifieddate="2012-10-05">
+    <creator>Gephi 0.8</creator>
+    <description>Edgeryders dynamic network</description>
+  </meta>
+  <graph defaultedgetype="directed" timeformat="date" mode="dynamic">
+    <attributes class="edge" mode="dynamic">
+      <attribute id="weight" title="Weight" type="float"></attribute>
+    </attributes>
+    <nodes></nodes>
+    <edges></edges>
+  </graph>
+</gexf>
