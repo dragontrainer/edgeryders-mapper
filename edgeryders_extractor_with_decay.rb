@@ -10,6 +10,8 @@ require 'date'
 ts = Time.new.strftime("%Y%m%d-%H%M")
 EXCLUDED_USERS = ['229', '624', '353', '595', '426', '462', '185', '592'] # these are spambots or other blocked users                               
 
+nodes_titles = ["Id","Label","Type","TimeInterval","Roles"] 
+edges_titles = ["Source","Target","Weight","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"]
 extractionday = Date.today
 decay = 30
 
@@ -33,6 +35,18 @@ puts ""
 puts "Exporting ..."
 
 FileUtils.mkdir_p "export/#{ts}"
-dataset.export_member_member_csv "export/#{ts}/edgeryders-member-member-with-decay-ANON", :member_node_field=>:code, :exclude_isolated=>false, :decay=>decay
-dataset.export_member_member_csv "export/#{ts}/edgeryders-member-member-with-decay-NAMES", :member_node_field=>:name, :exclude_isolated=>false, :decay=>decay
+dataset.export_member_member_csv( "export/#{ts}/edgeryders-member-member-with-decay-ANON", 
+                                  :member_node_field=>:code, 
+                                  :exclude_isolated=>false, 
+                                  :nodes_titles => nodes_titles,
+                                  :edges_titles => edges_titles,
+                                  :decay=>decay
+                                )
+dataset.export_member_member_csv( "export/#{ts}/edgeryders-member-member-with-decay-NAMES", 
+                                  :member_node_field=>:name, 
+                                  :exclude_isolated=>false, 
+                                  :nodes_titles => nodes_titles,
+                                  :edges_titles => edges_titles,
+                                  :decay=>decay
+                                )
 

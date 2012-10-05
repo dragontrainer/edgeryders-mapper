@@ -321,14 +321,19 @@ class EdgerydersDataset
   def export_member_member_csv( filename, options )
     nodes,edges = convert_to_member_member_csv(@detailed_network, options)
     
-    write_file "#{filename}-nodes.csv", %{"Id","Label","Type","TimeInterval","Roles"\n}+nodes.join("\n")
-    write_file "#{filename}-edges.csv", %{"Source","Target","TimeInterval","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"\n}+edges.join("\n")
+    nodes_titles = options[:nodes_titles]||["Id","Label","Type","TimeInterval","Roles"]  
+    write_file "#{filename}-nodes.csv", %{#{format_titles(nodes_titles)}\n}+nodes.join("\n")
+    edges_titles = options[:edges_titles]||["Source","Target","TimeInterval","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"]  
+    write_file "#{filename}-edges.csv", %{#{format_titles(edges_titles)}\n}+edges.join("\n")
     puts
     puts "EXPORT MEMBER TO MEMBER CSV WITH OPTIONS #{options.inspect} DONE"
     puts
   end
   
-
+  def format_titles(titles)
+    titles.map{|t| %{"#{t}"}}.join(", ")
+  end
+  
   def convert_to_member_member_csv( detailed_network, options={} )
     member_node_field = options[:member_node_field]||:code
     timestamp_method = options[:timestamp_method]||:gephi_time_interval
@@ -413,7 +418,7 @@ class EdgerydersDataset
       f = interval[0].strftime(fmt)
       t = interval[1].nil? ? "Infinity" : interval[1].strftime("%Y-%m-%dT%H:%M:%S:000")
       w = interval[2]
-      %{"[#{f}, #{t}, #{w}]"}
+      %{[#{f}, #{t}, directed, #{w}]}
     end
        
     %{"<#{interval_list.join("; ")}>"}
