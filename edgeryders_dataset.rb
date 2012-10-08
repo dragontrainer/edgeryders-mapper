@@ -331,7 +331,7 @@ class EdgerydersDataset
   end
   
   def format_titles(titles)
-    titles.map{|t| %{"#{t}"}}.join(", ")
+    titles.map{|t| %{#{t}}}.join(",")
   end
   
   def convert_to_member_member_csv( detailed_network, options={} )
@@ -413,20 +413,20 @@ class EdgerydersDataset
   end
   
   def gephi_time_interval_list(intervals)
-    fmt = "%Y-%m-%dT%H:%M:%S:000" 
+    fmt = "%Y-%m-%dT%H:%M:%S.000" 
     interval_list = intervals.map do |interval| 
       f = interval[0].strftime(fmt)
-      t = interval[1].nil? ? "Infinity" : interval[1].strftime("%Y-%m-%dT%H:%M:%S:000")
+      t = interval[1].nil? ? "Infinity" : interval[1].strftime("%Y-%m-%dT%H:%M:%S.000")
       w = interval[2]
-      %{[#{f}, #{t}, directed, #{w}]}
+      %{[#{f}, #{t}, #{w})}
     end
        
     %{"<#{interval_list.join("; ")}>"}
   end
   
   def gephi_time_interval(from, to=nil)
-    f = from.strftime("%Y-%m-%dT%H:%M:%S:000")
-    t = to.nil? ? "Infinity" : to.strftime("%Y-%m-%dT%H:%M:%S:000")
+    f = from.strftime("%Y-%m-%dT%H:%M:%S.000")
+    t = to.nil? ? "Infinity" : to.strftime("%Y-%m-%dT%H:%M:%S.000")
     %{"<[#{f}, #{t}]>"}
   end
   def epoch_timestamp(from, to=nil)
