@@ -418,9 +418,12 @@ class EdgerydersDataset
       f = interval[0].strftime(fmt)
       t = interval[1].nil? ? "Infinity" : interval[1].strftime("%Y-%m-%dT%H:%M:%S.000")
       w = interval[2]
-      %{[#{f}, #{t}, #{w})}
+      %{#{f}, #{t}, #{w}}
     end
-       
+    # the last interval needs to be braced by "[]"
+    # all the others by "[)"
+    first_interval = interval_list.pop
+    interval_list =  interval_list.map{|e| %{[#{e})}}.push(%{[#{first_interval}]})  
     %{"<#{interval_list.join("; ")}>"}
   end
   
