@@ -13,7 +13,8 @@ EXCLUDED_USERS = ['229', '624', '353', '595', '426', '462', '185', '592'] # thes
 nodes_titles = ["Id","Label","Type","TimeInterval","Roles"] 
 edges_titles = ["Source","Target","Weight","Mission Report Id","Mission Report Title","Mission Brief Id","Mission Brief Title","Campaign Id","Campaign Title"]
 extractionday = Date.today
-decay = 30
+# "decay" sets the number of days the edge is supposedly active. Setting here to 1000 for no decay
+decay = 1000
 
 puts "------------------------"
 puts "Loading and parsing"
