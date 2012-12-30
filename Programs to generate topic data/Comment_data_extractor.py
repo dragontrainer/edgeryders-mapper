@@ -103,7 +103,7 @@ for i in range (len(allcomments)): #the loop drives the whole program
 	# determine what campaign the mission brief ids corresponds to. Source: http://edgeryders.ppa.coe.int/campaigns-from-brief-ids
 	if brief_id == 29 or brief_id == 43 or brief_id == 44 or brief_id == 45:
 		campaign = '01 - Bootcamp'
-	elif brief_id == 188 or brief_id == 189 or brief_id == 190 or brief_id == 191:
+	elif brief_id == 188 or brief_id == 189 or brief_id == 190 or brief_id == 191 or brief_id == 283:
 		campaign = '02 - Making a living'
 	elif brief_id == 262 or brief_id == 264 or brief_id == 267 or brief_id == 269:
 		campaign = '03 - We, the people'
