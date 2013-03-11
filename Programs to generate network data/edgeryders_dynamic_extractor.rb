@@ -10,7 +10,7 @@ require 'date'
 ts = Time.new.strftime("%Y%m%d-%H%M")
 EXCLUDED_USERS = ['229', '624', '353', '595', '426', '462', '185', '592'] # these are spambots or other blocked users                               
 
-extractionday = Date.today
+extractionday = Date.new(2012, 12, 10)
 # see documentation of time objects for exact timing
 
 puts "------------------------"
@@ -22,7 +22,7 @@ dataset = EdgerydersDataset.new :json_users => File.read('json/users.json'),
                                  
 puts "------------------------"
 
-9.times do
+15.times do
 
 extractiontime = Time.mktime(extractionday.year, extractionday.month, extractionday.day)
 
@@ -42,6 +42,6 @@ FileUtils.mkdir_p "export/#{ts}"
 dataset.export_pajek "export/#{ts}/edgeryders-until_#{extractiontime.strftime("%Y%m%d_%H%M")}-ANON", :member_node_field=>:code, :exclude_isolated=>false
 dataset.export_pajek "export/#{ts}/edgeryders-until_#{extractiontime.strftime("%Y%m%d_%H%M")}-NAMES", :member_node_field=>:name, :exclude_isolated=>false
 
-extractionday -=30
+extractionday -=28
 
 end
