@@ -1,0 +1,27 @@
+Each row in the table describes the situation of a user of the Edgeryders platform during one time period. Time periods are four weeks long and start Monday, 17th October 2011.
+Users in the Edgeryders project could write posts or comments to posts. Posts would be generally written in the context of a "campaign" around a certain theme. Therefore, posts and comments are both assigned to one of 9 campaigns. Campaigns were rolled out sequentially, at an interval of about four weeks (except for the first two and the last one, which took longer). 
+Comments are interpreted as directed edges from the author of the comment to the author of the post or comment being commented. Each time period gives rise to a network.
+
+
+node id => the unique Drupal identifier of the user (node in the network).
+is_team => 1 if the user is paid to take part in the Edgeryders project, 0 otherwise.
+creation date => date of creation of the user's account in UNIX time.
+timestamp => UNIX timestamp of the end of the corresponding time period.
+NPosts in [campaign_title] => number of posts written by the user in the context of that campaign.
+EPosts in [campaign_title] => total number of characters in the posts written by the user in the context of that campaign. E is for effort.
+NComms written in [campaign_title] => number of comments written by the user in the context of that campaign.
+EComms written in [campaign_title] => total number of characters in the comments written by the user in the context of that campaign. E is for effort.
+NTeam comms received in [campaign_title] => number of comments directed to this user in the context of that campaign by paid members of the Edgeryders team.
+ETeam comms received in [campaign_title] = total number of characters in the comments directed to this user in the context of that campaign by paid members of the Edgeryders team.
+NComms received in [campaign_title] => number of comments directed to this user in the context of that campaign by other (unpaid) users.
+EComms received in [campaign_title] => total number of characters in the comments directed to this user in the context of that campaign by other (unpaid) users.
+Cluster => clustering coefficient
+K-Cores => number of K-cores this user is a part of (not sure – can't find the documentation of the plugin)
+PageRank => eigenvector centrality of this user
+Indegree => number of in-neighbors of this user (people who wrote comments to her)
+Outdegree => number of out-neighbors of this user (people she wrote comments to)
+betweennessCentralityCount => betweenness centrality of this user. This refers to a weighted network, in which the weight of the edge from i to j is simply the number of comments that i has written to j.
+betweennessCentralityEffort => betweenness centrality of this user. This refers to a weighted network, in which the weight of the edge from i to j is the sum of the length in characters of all comments that i has written to j.
+graphDensity => the network density, normalized to the complete network.
+modularityCount => the modularity of the maximal modularity partition. This refers to a weighted network, in which the weight of the edge from i to j is simply the number of comments that i has written to j. The maximal modularity partition is computed applying the Louvain algorithm 20 times and taking the average of the 20 realizations. Experimentation with mean and standard deviation of the distribution of the modularity score indicates the latter is small with respect to the former.
+modularityEffort => the modularity of the maximal modularity partition. This refers to a weighted network, in which the weight of the edge from i to j is the sum of the length in characters of all comments that i has written to j. The maximal modularity partition is computed applying the Louvain algorithm 20 times and taking the average of the 20 realizations. Experimentation with mean and standard deviation of the distribution of the modularity score indicates the latter is small with respect to the former.
