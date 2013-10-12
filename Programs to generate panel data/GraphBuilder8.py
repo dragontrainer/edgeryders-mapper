@@ -1,8 +1,8 @@
-# This program accepts a list of users and a list of comments as CSV files and builds the associated graph.
-# In this version I am not loading nodes. Not sure yet whether I need them.
+﻿# This program accepts a list of users and a list of comments as CSV files and builds the associated graph.
+# Adding clustering coefficient
 
 # UNICODE: "u'Something"
-
+from __future__ import division
 
 
 from tulip import *
@@ -10,6 +10,10 @@ import json
 import csv
 import datetime
 import time
+from tulip2networkx import *
+from modularity import *
+
+
 
 # define the main method
 
@@ -100,7 +104,7 @@ def main(graph):
 
     # assign the time interval step in UNIX time: 4 weeks == 2419200
 
-    timestep = 2419200 #corresponds to four weeks
+    timestep = int(2419200/4) #corresponds to ONE week
     time_0 = 1321228800 # corresponds to November 14th 2011
     time_final = 1355529600
     
@@ -121,15 +125,18 @@ def main(graph):
     my_ID_var = graph.getIntegerProperty('user_id')
     user_name = graph.getStringProperty('user_name')
     is_team = graph.getBooleanProperty('team')
-    dateProperty = graph.getIntegerProperty('timestamp')
+    dateProperty = graph.getDoubleProperty('timestamp')
     # dateProperty stores the account creation date of node (user)
     # dateProperty stores the publication date of a comment (edge)
-    effortProperty = graph.getIntegerProperty('effort')
+    effortProperty = graph.getDoubleProperty('effort')
     # effortProperty stores the length of the comment.
     topicProperty = graph.getStringProperty('topic')
     briefIDProperty = graph.getStringProperty('brief_id')
     #topicProperty stores the Edgeryders campaign under which the comment is nested.
     #briefIDProperty stores the Edgeryders mission brief under which the comment is nested.
+    weightProperty = graph.getDoubleProperty('weight')
+    # weightProperty is for deparallelized, weighted subgraphs.
+    # weightProperty is then initialized to 1 for all edges.
 
     # create nodes and populate their properties.
     for u in range (len (userlist)):
@@ -173,8 +180,16 @@ def main(graph):
                 is_team[edge] = int(comment['author_team'])
                 topicProperty[edge] = comment['topic']
                 briefIDProperty[edge] = comment['brief_id']
+                weightProperty[edge] = 1
 
+    # before creating any subgraph, store the nodes and edges of the root graph
+    # into Python objects
+
+    mainNodes = [n for n in graph.getNodes()]
+    mainEdges = [e for e in graph.getEdges()]
+    
     tlp.saveGraph(graph, (dirPath + 'To Guy/ERgraph_no_subgraphs.tlp'))
+
 
     # create subgraphs
 
@@ -191,32 +206,146 @@ def main(graph):
             if dateProperty.getEdgeValue(e) <= t:
                 sg.addEdge(e)
 
-    # compute node-specific network properties
 
-    nodeMetricNames = ['Betweenness Centrality', 'Cluster', 'K-Cores', 'PageRank']#, 'Eccentricity'] # add more ...
-    #nodeMetricProperties = {}
-    for sg in graph.getSubGraphs():
+## Moving this over to the deparallelized graph    
 
-        # compute subgraph metrics and store as local properties
-        for metricName in nodeMetricNames:
-            resultProperty = sg.getLocalDoubleProperty(metricName)
-            dataSet = tlp.getDefaultPluginParameters(metricName, sg)
-            # WARNING THE PROPERTY IS OVERWRITTEN HERE THROUGH DIFFERENT SUBGRAPH
-            #nodeMetricProperties[metricName] = resultProperty
-            sg.applyDoubleAlgorithm(metricName, resultProperty, dataSet)
+##    # compute node-specific network properties
+##
+##    nodeMetricNames = ['Cluster', 'K-Cores', 'PageRank']#, 'Eccentricity'] # add more ...
+##    # Betweenness Centrality is computed below from deparallelized graphs
+##    #nodeMetricProperties = {}
+##    for sg in graph.getSubGraphs():
+##
+##        # compute subgraph metrics and store as local properties
+##        for metricName in nodeMetricNames:
+##            resultProperty = sg.getLocalDoubleProperty(metricName)
+##            dataSet = tlp.getDefaultPluginParameters(metricName, sg)
+##            # WARNING THE PROPERTY IS OVERWRITTEN HERE THROUGH DIFFERENT SUBGRAPH
+##            #nodeMetricProperties[metricName] = resultProperty
+##            sg.applyDoubleAlgorithm(metricName, resultProperty, dataSet)
             
     tlp.saveGraph(graph, (dirPath + "/To Guy/ERgraph_w_subgraphs.tlp"))
 
+    # create deparallelized subgraphs
 
-    
-##       here starts the dynamic (bigtable) part. 
+    print 'Creating deparallelized subgraphs...'
+
+    for t in range(time_0, time_final, timestep):
+        # add nodes. This can be done in one pass.
+        dpsg = graph.addSubGraph()
+        dpsg.setName('dp_' + str(t))
+        print ('Now building subgraph ' + str (dpsg.getName()))
+        for n in graph.getNodes():
+            if dateProperty.getNodeValue(n) <= t:
+                dpsg.addNode(n)
+
+        # to add edges, iterate over nodes in the newly built subgraph and look for unique neighbors.
+
+        for n in dpsg.getNodes():
+            dictOutNeighbors = {}
+            for e in graph.getOutEdges(n): # this iteration happens over the MAIN graph.
+                if e in mainEdges: # does this edge correspond to an actual comment?
+
+                    if dateProperty.getEdgeValue(e) <= int(t): # is the node old enough to be in this dp-subgraph?
+
+                        neighbor = graph.target(e) # if YES then let this be the target of this edge
+                        if neighbor not in dictOutNeighbors: # is neighbor already in the dict of targets of edges?
+                            dictOutNeighbors[neighbor] = [] # if NO, then create a field for that node. Assign an empty list as its value
+                            # sc = graph.source(e) # this is the source node of this edge - should always be n!
+                            # tg = graph.target(e) # this is the target – should always be neighbor!
+                            newEdge = dpsg.addEdge(n,neighbor) # add a new edge to the graph with the same source and target as the edge in mainEdges. notice: add new edge, not reuse e. a
+                            # now populate the properties of this edge.
+                            weightProperty[newEdge] = 1 # there is no other edge with the same source and target, so it has weight (Count) = 1
+                            effortProperty[newEdge] = effortProperty[e]  # there is no other edge with the same source and target, so it has effort = the effort of e
+                            
+                        else: # if YES, the target of e is already in dictOutNeighbors:
+                            # iterate over OutEdges already added to the new subgraph and look for the one
+                            # with the same target as e.
+                            for e2 in dpsg.getOutEdges(n):
+                                if neighbor == dpsg.target(e2):
+                                    weightProperty[e2] += 1
+                                    effortProperty[e2] = effortProperty[e2] + effortProperty[e]
+
+
+            tlp.saveGraph(graph, dirPath+"/To_Guy/ERgraph_w_dp_subgraphs_try.tlp")
+
+##    # compute node-specific network properties
+
+    nodeMetricNames = ['Cluster', 'K-Cores', 'PageRank']#, 'Eccentricity'] # add more ...
+    # Betweenness Centrality is computed below from deparallelized graphs
+    #nodeMetricProperties = {}
+    for dpsg in graph.getSubGraphs():
+
+        # compute subgraph metrics and store as local properties
+        for metricName in nodeMetricNames:
+            resultProperty = dpsg.getLocalDoubleProperty(metricName)
+            dataSet = tlp.getDefaultPluginParameters(metricName, dpsg)
+            # WARNING THE PROPERTY IS OVERWRITTEN HERE THROUGH DIFFERENT SUBGRAPH
+            #nodeMetricProperties[metricName] = resultProperty
+            dpsg.applyDoubleAlgorithm(metricName, resultProperty, dataSet)
+
+        # compute Betweenness centrality using networkx
+
+        betweennessCentralityCount = dpsg.getDoubleProperty('betweennessCentralityCount') #initialize the properties
+        betweennessCentralityEffort = dpsg.getDoubleProperty('betweennessCentralityEffort')
+        nxOCount = NetworkxOperation (dpsg, weightProperty) # converts to networkx
+        nxOEffort = NetworkxOperation (dpsg, effortProperty)
+        #...and computes the centrality
+        # the objects returned are dictionaries {<tulipNode>:centrality}
+        centMapCount = nxOCount.compute_centrality()
+        centMapEffort = nxOEffort.compute_centrality()
+
+        for n in dpsg.getNodes():
+            betweennessCentralityCount[n] = centMapCount[n]
+            betweennessCentralityEffort[n] = centMapEffort[n]
+
+
+        # compute edge density
+        numEdges = int(dpsg.numberOfEdges())
+        numNodes = int(dpsg.numberOfNodes())
+        density = numEdges/(numNodes * (numNodes - 1))
+
+        # compute (global) clustering coefficient
+
+        avgClusteringCoefficient = 0
+        cc = dpsg.getDoubleProperty('Cluster')
+        for n in dpsg.getNodes():
+            avgClusteringCoefficient = avgClusteringCoefficient + cc[n]/numNodes
+            
+        
+        
+        # compute Louvain modularity using both count and effort
+        weightPropertyCount = dpsg.getDoubleProperty ('weight')
+        avgLouvainCount = averageLouvain20 (dpsg, weightPropertyCount)
+        weightPropertyEffort = dpsg.getDoubleProperty('effort')
+        avgLouvainEffort = averageLouvain20 (dpsg, weightPropertyEffort)
+        
+        
+        # for easy printing to file, store global properties as node properties.
+        # all nodes in the same subgraph are assigned the same values for each global property.
+        # initialize
+        graphDensity = dpsg.getDoubleProperty ('graphDensity')
+        modularityCount = dpsg.getDoubleProperty ('modularityCount')
+        modularityEffort = dpsg.getDoubleProperty ('modularityEffort')
+        averageClusteringCoefficient = dpsg.getDoubleProperty ('averageClusteringCoefficient')
+        
+        for n in dpsg.getNodes():
+            graphDensity [n] = density
+            modularityCount [n] = avgLouvainCount
+            modularityEffort [n] = avgLouvainEffort
+            averageClusteringCoefficient [n] = avgClusteringCoefficient
+                                              
+
+    tlp.saveGraph(graph, dirPath+"/To_Guy/ERgraph_w_dp_subgraphs.tlp")
+
+    # print the csv file
 
     print 'Writing the output to file...'
     topics = ['01 - Bootcamp', '02 - Making a living', '03 - We, the people', '04 - Caring for commons', '05 - Learning',
                   '06 - Living together', '07 -Finale', '08 - Resilience', '00 - Undefined']
     
     # print headers to csv file
-    csvfile = open(dirPath + 'subGraphsTabData4.csv', 'w')
+    csvfile = open(dirPath + 'subGraphsTabData7.csv', 'w')
     activityMetricNames = []
     for topic in topics:
         activityMetricNames.append('NPosts in ' + topic)
@@ -232,7 +361,10 @@ def main(graph):
         activityMetricNames.append('EComms received in ' + topic)
 
     neighboringMetricNames = ['Indegree','Outdegree']
-    fieldNames = ['node id', 'is_team', 'creation date', 'timestamp'] + activityMetricNames + nodeMetricNames + neighboringMetricNames
+    dpGraphMetricNames = ['betweennessCentralityCount', 'betweennessCentralityEffort', 'graphDensity', 'modularityCount', 'modularityEffort', 'averageClusteringCoefficient'] 
+
+
+    fieldNames = ['node id', 'is_team', 'creation date', 'timestamp'] + activityMetricNames + nodeMetricNames + neighboringMetricNames + dpGraphMetricNames
     csvwriter = csv.DictWriter(csvfile, fieldNames, delimiter = ',')
     csvwriter.writerow(dict((fn,fn) for fn in fieldNames))
 
@@ -241,20 +373,17 @@ def main(graph):
     for n in graph.getNodes():
         user_i_time_t = {} # the accumulator for the row
         user_i_time_t['node id'] = str(my_ID_var[n])
-        # print 'Now processing user ', str(my_ID_var[n])
+        print 'Now processing user ', str(my_ID_var[n])
         user_i_time_t['creation date'] = (str(dateProperty[n]))
         user_i_time_t['is_team'] = int(is_team[n])
-        
-        for sg in graph.getSubGraphs():
-            # for t in range(time_0, time_final, timestep):
-            t = int(sg.getName())
+
+        # iterate over time periods, grabbing the relevant subgraph for each one
+        for t in range(time_0, time_final, timestep):
+            sg = graph.getSubGraph(str(t))
+
             user_i_time_t['timestamp'] = (str(t))
             # print 'processing subgraph: ', str(t)
             
-            # I am using dicts as accumulators of comments written and received. Reason: so I don't get lost in indices while programming.
-            # each accumulator dict's elements are lists of 2 elements. The first is the number of comments/posts; the second is 
-            # the sum of their lengths, and can be thought of as effort level.
-
             # Initialize accumulators:
             user_i_time_t['Indegree'] = 0
             user_i_time_t['Outdegree'] = 0
@@ -294,7 +423,6 @@ def main(graph):
                     dictInNeighbors[neighbor] = []
                 dictInNeighbors[neighbor].append(e)
                 # counting comments and effort to our user
-                # TODO: filter here for the timestamp property of the edge. It must not count edges created in earlier periods!
 
                 eTimestamp = dateProperty[e]
                 eTopic = topicProperty[e]
@@ -319,7 +447,7 @@ def main(graph):
                 dictOutNeighbors[neighbor].append(e)
 
                 # counting comments and effort from our user
-                if dateProperty[e] >= (t - timestep):
+                if dateProperty[e] > (int(t) - timestep) and dateProperty[e] <= int(t): # not sure about this
                     eTopic = topicProperty[e]
                     effort = int(effortProperty[e])
                     user_i_time_t['NComms written in ' + eTopic] += 1
@@ -330,42 +458,15 @@ def main(graph):
             user_i_time_t['Indegree'] = len(dictInNeighbors)
             user_i_time_t['Outdegree'] = len(dictOutNeighbors)
 
+        
+            # now metrics pertaining to the deparallelized graphs (dpGraphMetrics). First, grab the deparallelized graph.
+            dpsg = graph.getSubGraph('dp_' + str(t))
 
-
+            for metric in dpGraphMetricNames:
+                metricProperty = dpsg.getDoubleProperty(metric)
+                user_i_time_t[metric] = metricProperty[n]
                 
-                # this lists the edges for which my node is a target
-                
-
-            # user_i_time_t = 
-            # now comments, all three categories:
-
-            
-            '''
-            for j in range (len (commentslist)):
-                if (commentslist[j]['author_id'] == userlist[i]['user_id']) and (commentslist[j]['timestamp'] > t) and (commentslist[j]['timestamp'] <= t + timestep):
-                    for topic in topics:
-                        if commentslist[j]['topic'] == topic:
-                            commentswritten[topic][0] = commentswritten[topic][0] + 1
-                            commentswritten[topic][1] = commentswritten[topic][1] + int (commentslist[j]['effort'])
-                elif (commentslist[j]['target_id'] == userlist[i]['user_id']) and (commentslist[j]['timestamp'] > t) and (commentslist[j]['timestamp'] <= t + timestep):
-                    if commentslist[j]['team'] == '0': 
-                        for topic in topics:
-                            if commentslist[j]['topic'] == topic:
-                                commentsreceived[topic][0] = commentsreceived[topic][0] + 1
-                                commentsreceived[topic][1] = commentsreceived[topic][1] + int( commentslist[j]['effort'])
-                    else:
-                        for topic in topics:
-                            if commentslist[j]['topic'] == topic:
-                                commentsreceived_team[topic][0] = commentsreceived_team[topic][0] + 1
-                                commentsreceived_team[topic][1] = commentsreceived_team[topic][1] + commentslist[j]['effort']
-            '''
-            #now subgraph properties
-            # node metrics first    
-            #nodeMetricValues = {}
-            #for metricName in nodeMetricNames:
-            #    user_i_time_t[metricName] = nodeMetrics[metricName][n]
-            
-            # now global metrics
+                           
             csvwriter.writerow(user_i_time_t)
 
 
@@ -380,7 +481,7 @@ def main(graph):
 
 def findNodeById(id, graph, idProperty):
     '''
-      finds a node if it exists / return None otherwise. This function has a bug I was not able to fix, and always returns None. However, idProperty seems to be stored correctly!
+      finds a node if it exists / return None otherwise. 
       '''
     for n in graph.getNodes():
         if idProperty[n] == id:
