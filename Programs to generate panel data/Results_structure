@@ -1,0 +1,10 @@
+# Structure of the results dictionary
+
+results = {
+    'edge_source1_target'1: {'sourceID' = sourceNodeID, 'targetID' = targetNodeID, 'edge?' = edgeBool, //
+                             'timeStamp' = timeStamp, 'weight' = weight, 'sourceNodeMetrics1' = sourceNodeMetrics1 
+                            }
+    'edge_source1_target2': {}
+    }
+
+# create an accumulator edgeDict. Write node metrics as key-values pairs in the accumulator.

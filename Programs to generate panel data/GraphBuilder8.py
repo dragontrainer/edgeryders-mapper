@@ -1,4 +1,4 @@
-﻿# This program accepts a list of users and a list of comments as CSV files and builds the associated graph.
+# This program accepts a list of users and a list of comments as CSV files and builds the associated graph.
 # Adding clustering coefficient
 
 # UNICODE: "u'Something"
@@ -10,6 +10,8 @@ import json
 import csv
 import datetime
 import time
+import sys
+sys.path.append ('/Users/albertocottica/Dropbox/PhD/MyPhDcode/')
 from tulip2networkx import *
 from modularity import *
 
@@ -252,7 +254,7 @@ def main(graph):
                         if neighbor not in dictOutNeighbors: # is neighbor already in the dict of targets of edges?
                             dictOutNeighbors[neighbor] = [] # if NO, then create a field for that node. Assign an empty list as its value
                             # sc = graph.source(e) # this is the source node of this edge - should always be n!
-                            # tg = graph.target(e) # this is the target – should always be neighbor!
+                            # tg = graph.target(e) # this is the target - should always be neighbor!
                             newEdge = dpsg.addEdge(n,neighbor) # add a new edge to the graph with the same source and target as the edge in mainEdges. notice: add new edge, not reuse e. a
                             # now populate the properties of this edge.
                             weightProperty[newEdge] = 1 # there is no other edge with the same source and target, so it has weight (Count) = 1
@@ -267,7 +269,7 @@ def main(graph):
                                     effortProperty[e2] = effortProperty[e2] + effortProperty[e]
 
 
-            tlp.saveGraph(graph, dirPath+"/To_Guy/ERgraph_w_dp_subgraphs_try.tlp")
+            # tlp.saveGraph(graph, dirPath+"/To_Guy/ERgraph_w_dp_subgraphs_try.tlp")
 
 ##    # compute node-specific network properties
 
